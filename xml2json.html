@@ -131,7 +131,8 @@ let textOnly = []
 articleArray.forEach((article) => {
   let text = article.content.replaceAll(/<authorialNote>.*<\/authorialNote>/gm, '').replaceAll(/<[^>]*>/gm, '')
   let eIdText = article.eIdTxt.replaceAll(/<authorialNote>.*<\/authorialNote>/gm, '').replaceAll(/<[^>]*>/gm, '')
-  textOnly.push(eIdText + " StGB: " + text)
+  //add more fields, if needed for context.
+  textOnly.push(eIdText + " [LAW ABBREVIATION (StGB/OR/...)]: " + text)
 });
 console.log(textOnly)
 //remove multiple spaces
