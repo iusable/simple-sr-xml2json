@@ -1,0 +1,143 @@
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>XML Parser</title>
+    <meta name="description" content="XML Parser">
+    <meta name="author" content="Colin Carter">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
+  </head>
+<body>
+  <main class="container">
+<!-- Load XML File -->
+<form>
+  <label for="xml">Upload XML-Datei von der Systematischen Rechtssammlung (SR) auf admin.ch:</label><br>
+  <input type="file" id="xml" name="xml"><br>
+  <button type="button" onclick="readXMLFile()">Parse</button>
+</form>
+
+<div style="display: flex;">
+  <div style="border:1px solid black; padding: 5px; margin: 5px; width:50%; max-height:80vh; overflow:scroll;">
+    <h3>ENTIRE JSON <span class="length"></span></h3>
+    <code><pre id="json">🍿 Waiting for file...</pre></code>
+  </div>
+  <div style="border:1px solid black; padding: 5px; margin: 5px; width:50%; max-height:80vh; overflow:scroll;">
+    <h3>ARTICLE ARRAY <span class="length"></span></h3>
+    <code><pre id="array">🍿 Waiting for file...</pre></code>
+  </div>
+
+</div>
+</main>
+<script>
+
+// Get content from xml file (JS)
+function readXMLFile(){
+  var file = document.getElementById("xml").files[0];
+  var reader = new FileReader();
+  reader.onload = function (e) {
+    var xmlString = e.target.result;
+    parseXML(xmlString);
+  };
+  reader.readAsText(file);
+
+  console.log("File loaded")
+  //console log content: 
+  //console.log(xmlString)
+  
+}
+
+function parseXML(xmlString){
+// Parse the XML string into an XML document object
+const parser = new DOMParser();
+const xmlDoc = parser.parseFromString(xmlString, "application/xml");
+
+// Get all the articles in the document
+const articles = xmlDoc.getElementsByTagName("article");
+
+// Create an array to hold the extracted information for each article
+const articleArray = [];
+
+// Loop through each article and extract the necessary information
+for (let i = 0; i < articles.length; i++) {
+  const article = articles[i];
+
+  // Extract the book, part, title, and level information
+  const book = article.closest("book")?.getAttribute("eId") || "ERROR";
+  //get the text of the book
+  const bookTxt = xmlDoc.querySelector(`book[eId="${book}"]`)?.getElementsByTagName("num")[0]?.innerHTML || "ERROR";
+  //Part
+  const part = article.closest("part")?.getAttribute("eId") || "ERROR";
+  //get the text of the part
+  const partTxt = xmlDoc.querySelector(`part[eId="${part}"]`)?.getElementsByTagName("num")[0]?.innerHTML || "ERROR";
+  //Title
+  const title = article.closest("title")?.getAttribute("eId") || "ERROR";
+  //get the text of the title
+  const titleTxt = xmlDoc.querySelector(`title[eId="${title}"]`)?.getElementsByTagName("num")[0]?.innerHTML || "ERROR";
+  //Level
+  const level = article.closest("level")?.getAttribute("eId") || "ERROR";
+  //get the text of the level
+  const levelTxt = xmlDoc.querySelector(`level[eId="${level}"]`)?.getElementsByTagName("num")[0]?.innerHTML || "ERROR";
+
+  // Extract the eId of the article itself
+  const eId = article.getAttribute("eId") || "ERROR";
+  //get the text of the article
+  const eIdTxt = article.getElementsByTagName("num")[0]?.innerHTML || "ERROR";
+
+  // Extract the content of the article
+  const contentElement = article.getElementsByTagName("content")[0];
+  let content = "ERROR";
+  if (contentElement) {
+    content = contentElement.innerHTML;
+  } else {
+    const authorialNote = article.getElementsByTagName("authorialNote")[0];
+    if(authorialNote) {
+      content = authorialNote.innerHTML;
+    }
+  }
+
+  // Create an object containing all the extracted information for this article
+  const articleObj = {
+    book,
+    bookTxt,
+    part,
+    partTxt,
+    title,
+    titleTxt,
+    level,
+    levelTxt,
+    content,
+    eId,
+    eIdTxt
+  };
+
+  // Add the article object to the array
+  articleArray.push(articleObj);
+}
+
+// Output the array of article objects as a JSON string
+console.log(JSON.stringify(articleArray));
+//remove multiple spaces
+articleArrayText = JSON.stringify(articleArray).replace(/\s\s+/g, ' ')
+document.getElementById("json").innerHTML = JSON.stringify(articleArrayText, null, 2);
+console.log("Total Articles extracted (includes a / bis etc.): " + articleArray.length);
+//set length on both elements
+document.querySelectorAll(".length").forEach((element) => {
+  element.innerHTML = "(" + articleArray.length + ")";
+});
+
+
+let textOnly = []
+
+articleArray.forEach((article) => {
+  let text = article.content.replaceAll(/<authorialNote>.*<\/authorialNote>/gm, '').replaceAll(/<[^>]*>/gm, '')
+  let eIdText = article.eIdTxt.replaceAll(/<authorialNote>.*<\/authorialNote>/gm, '').replaceAll(/<[^>]*>/gm, '')
+  textOnly.push(eIdText + " StGB: " + text)
+});
+console.log(textOnly)
+//remove multiple spaces
+textOnly = textOnly.map((text) => text.replace(/\s\s+/g, ' '))
+document.getElementById("array").innerHTML = JSON.stringify(textOnly, null, 2);
+}
+</script>
+</body>
+</html>
